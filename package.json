@@ -1,0 +1,23 @@
+{
+  "name": "rivva-direct-feed",
+  "version": "1.0.0",
+  "description": "A rivva.de RSS feed, featuring direct links.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "feedparser": "~0.19.x",
+    "rss": "~1.0.x",
+    "express": "~4.9.x",
+    "cheerio": "~0.17.x",
+    "q": "~1.0.x"
+  },
+  "engines": {
+    "node": "0.10.x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sibbl/rivva-direct-feed"
+  }
+}

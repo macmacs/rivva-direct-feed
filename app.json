@@ -1,0 +1,6 @@
+{
+  "name": "Rivva Direct Feed",
+  "description": "A rivva.de RSS feed, featuring direct links.",
+  "repository": "https://github.com/sibbl/rivva-direct-feed",
+  "keywords": ["rivva", "feed", "rss", "atom"]
+}
