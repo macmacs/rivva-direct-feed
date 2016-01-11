@@ -7,11 +7,12 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "feedparser": "~0.19.x",
-    "rss": "~1.0.x",
-    "express": "~4.9.x",
     "cheerio": "~0.17.x",
-    "q": "~1.0.x"
+    "dblite": "^0.7.x",
+    "express": "~4.9.x",
+    "feedparser": "~0.19.x",
+    "q": "~1.0.x",
+    "rss": "~1.0.x"
   },
   "engines": {
     "node": "0.10.x"

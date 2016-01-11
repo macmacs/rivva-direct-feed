@@ -4,11 +4,15 @@ var FeedParser = require('feedparser');
 var cheerio = require('cheerio');
 var Q = require('q');
 var http = require('http');
+var dblite = require('dblite');
+var db = dblite('urlstorage.db');
 var app = express();
 
 var rivvaFeedUrl = "http://feeds.feedburner.com/rivva";
 
 var logStatus = false;
+
+db.query('CREATE TABLE IF NOT EXISTS rivva (guid TEXT UNIQUE, url TEXT)');
 
 app.set('port', (process.env.PORT || 5000))
 app.use(express.static(__dirname + '/public'))
@@ -36,7 +40,7 @@ app.get('/', function(request, response) {
         var promises = [];
         for(var i = 0; i < feedItems.length; i++) {
           var item = feedItems[i];
-          promises.push(getPostTitle(i, item.link));
+          promises.push(getPostTitle(i, item.guid, item.link));
         }
         if(logStatus) console.log("waiting for all direct links... (" + promises.length + ")");
         Q.all(promises).then(function(result) {
@@ -66,32 +70,67 @@ app.listen(app.get('port'), function() {
   if(logStatus) console.log("Node app is running at localhost:" + app.get('port'))
 })
 
-var getPostTitle = function(index, url) {
+var getPostTitle = function(index, guid, url) {
   var data = "", defer = Q.defer();
-  http.get(url, function (res) {
-    var content_length = parseInt(res.headers['content-length'], 10);
-    var total_downloaded = 0;
-    if (res.statusCode !== 200) {
-      defer.reject("HTTP Error " + res.statusCode + " for " + url);
-      return;
-    }
-    res.on("error", defer.reject);
-    res.on("data", function (chunk) {
-      data += chunk;
-      total_downloaded += chunk.length;
-      var percentage = Math.floor((total_downloaded / content_length) * 100);
-      defer.notify(percentage);
-    });
-    res.on("end", function () {
-      if(logStatus) console.log("getting direct link "+index+" of page " + url);
-      $ = cheerio.load(data);
-      var directLink = $("div>article>header>h1>a").attr("href");
-      if(logStatus) console.log("got direct link "+index+" of page " + url);
+
+  getUrlFromDatabase(guid).then(function(existingUrl) {
+    if(logStatus) console.log("result for db query of " + guid + ": " + existingUrl);
+    if(existingUrl === false) {
+      http.get(url, function (res) {
+        var content_length = parseInt(res.headers['content-length'], 10);
+        var total_downloaded = 0;
+        if (res.statusCode !== 200) {
+          defer.reject("HTTP Error " + res.statusCode + " for " + url);
+          return;
+        }
+        res.on("error", defer.reject);
+        res.on("data", function (chunk) {
+          data += chunk;
+          total_downloaded += chunk.length;
+          var percentage = Math.floor((total_downloaded / content_length) * 100);
+          defer.notify(percentage);
+        });
+        res.on("end", function () {
+          if(logStatus) console.log("getting direct link " + index + " of page " + url);
+          $ = cheerio.load(data);
+          var directLink = $("div>article>header>h1>a").attr("href");
+          if(logStatus) console.log("got direct link " + index + " of page " + url);
+          saveUrlInDatabase(guid, directLink);
+          defer.resolve({
+            index: index,
+            link: directLink
+          });
+        });
+      });
+    }else{
       defer.resolve({
         index: index,
-        link: directLink
+        link: existingUrl
       });
-    });
+    }
   });
   return defer.promise;
+}
+
+var getUrlFromDatabase = function(guid) {
+  var defer = Q.defer();
+  db.query('SELECT url FROM rivva WHERE guid  = :guid', {guid: guid}, function(err, rows) {
+    if(err) {
+      defer.reject(err);
+    }else{
+      if(rows.length == 1) {
+        defer.resolve(rows[0][0]);
+      }
+      defer.resolve(false);
+    }
+  });
+  return defer.promise;
+}
+
+var saveUrlInDatabase = function(guid, url) {
+  db.query('INSERT INTO rivva VALUES(:guid, :url)', {guid: guid, url: url}, function(err) {
+    if(err) {
+      if(logStatus) console.log("error when saving url for " + guid);
+    }
+  });
 }
