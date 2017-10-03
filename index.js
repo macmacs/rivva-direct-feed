@@ -96,6 +96,7 @@ var getPostTitle = function(index, guid, url) {
           $ = cheerio.load(data);
           var directLink = $("div>article>header>h1>a").attr("href");
           if(logStatus) console.log("got direct link " + index + " of page " + url);
+          getPageExcerpt(index, guid, directLink);
           saveUrlInDatabase(guid, directLink);
           defer.resolve({
             index: index,
@@ -134,4 +135,35 @@ var saveUrlInDatabase = function(guid, url) {
       if(logStatus) console.log("error when saving url for " + guid);
     }
   });
+}
+
+var getPageExcerpt = function(index, guid, url) {
+  var data = "", defer = Q.defer();
+
+  http.get(url, function (res) {
+    var content_length = parseInt(res.headers['content-length'], 10);
+    var total_downloaded = 0;
+    if (res.statusCode !== 200) {
+      defer.reject("HTTP Error " + res.statusCode + " for " + url);
+      return;
+    }
+    res.on("error", defer.reject);
+    res.on("data", function (chunk) {
+      data += chunk;
+      total_downloaded += chunk.length;
+      var percentage = Math.floor((total_downloaded / content_length) * 100);
+      defer.notify(percentage);
+    });
+    res.on("end", function () {
+      if(logStatus) console.log("getting first paragraph " + index + " of page " + url);
+      $ = cheerio.load(data);
+      var content = $('p:first').text();
+      if(logStatus) console.log("got first paragraph: " + content);
+      // saveUrlInDatabase(guid, directLink);
+      defer.resolve({
+        content: content
+      });
+    });
+  });
+  return defer.promise;
 }
