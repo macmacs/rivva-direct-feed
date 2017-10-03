@@ -47,7 +47,7 @@ app.get('/', function(request, response) {
           if(logStatus) console.log("building RSS now...");
           var feed = new RSS(feedMeta);
   
-          if(logStatus) console.log(result);
+          if(logStatus) console.log(feedItems);
           if(logStatus) console.log("going through all items...");
 
           for(var i = 0; i < result.length; i++) {
