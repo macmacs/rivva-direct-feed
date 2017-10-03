@@ -10,7 +10,7 @@ var app = express();
 
 var rivvaFeedUrl = "http://feeds.feedburner.com/rivva";
 
-var logStatus = false;
+var logStatus = true;
 
 db.query('CREATE TABLE IF NOT EXISTS rivva (guid TEXT UNIQUE, url TEXT)');
 
@@ -46,7 +46,8 @@ app.get('/', function(request, response) {
         Q.all(promises).then(function(result) {
           if(logStatus) console.log("building RSS now...");
           var feed = new RSS(feedMeta);
-
+  
+          if(logStatus) console.log(result);
           if(logStatus) console.log("going through all items...");
 
           for(var i = 0; i < result.length; i++) {
